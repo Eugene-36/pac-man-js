@@ -12,20 +12,58 @@ export default class Pacman {
     this.currentMovingDirection = null;
     this.requestedMovingDirection = null;
 
+    this.pacmanAnimationTimerDefault = 10;
+    this.pacmanAnimationTimer = null;
+
+    this.pacmanRotation = this.Rotation.right;
+
+    this.wakaSound = new Audio('../sounds/waka.wav');
+
+    this.powerDotSound = new Audio('../sounds/power_dot.wav');
+
+    this.powerDotActive = false;
+    this.powerDotAboutToExpire = false;
+    this.timers = [];
+
+    this.madeFirstMove = false;
     document.addEventListener('keydown', this.#keydown);
 
     this.#loadPacmanImages();
   }
 
+  Rotation = {
+    right: 0,
+    down: 1,
+    left: 2,
+    up: 3,
+  };
+
   draw(ctx) {
     this.#move();
+    this.#animate();
+    this.#eatDot();
+    this.#eatPowerDot();
+
+    const size = this.tileSize / 2;
+    ctx.save();
+    ctx.translate(this.x + size, this.y + size);
+    ctx.rotate((this.pacmanRotation * 90 * Math.PI) / 180);
     ctx.drawImage(
       this.pacmanImages[this.pacmanImageIndex],
-      this.x,
-      this.y,
+      -size,
+      -size,
       this.tileSize,
       this.tileSize
     );
+
+    ctx.restore();
+    // ctx.drawImage(
+    //   this.pacmanImages[this.pacmanImageIndex],
+    //   this.x,
+    //   this.y,
+    //   this.tileSize,
+    //   this.tileSize
+    // );
   }
 
   #loadPacmanImages() {
@@ -53,30 +91,33 @@ export default class Pacman {
 
   //! Логи для управления packman
   #keydown = (event) => {
-    console.log('event', event.target);
     //up
     if (event.keyCode == 87) {
       if (this.currentMovingDirection == MovingDirection.down)
         this.currentMovingDirection = MovingDirection.up;
       this.requestedMovingDirection = MovingDirection.up;
+      this.madeFirstMove = true;
     }
     //down
     if (event.keyCode == 83) {
       if (this.currentMovingDirection == MovingDirection.up)
         this.currentMovingDirection = MovingDirection.down;
       this.requestedMovingDirection = MovingDirection.down;
+      this.madeFirstMove = true;
     }
     //left
     if (event.keyCode == 65) {
       if (this.currentMovingDirection == MovingDirection.right)
         this.currentMovingDirection = MovingDirection.left;
       this.requestedMovingDirection = MovingDirection.left;
+      this.madeFirstMove = true;
     }
     //right
     if (event.keyCode == 68) {
       if (this.currentMovingDirection == MovingDirection.left)
         this.currentMovingDirection = MovingDirection.right;
       this.requestedMovingDirection = MovingDirection.right;
+      this.madeFirstMove = true;
     }
   };
 
@@ -86,34 +127,98 @@ export default class Pacman {
         Number.isInteger(this.x / this.tileSize) &&
         Number.isInteger(this.y / this.tileSize)
       ) {
-        this.currentMovingDirection = this.requestedMovingDirection;
+        if (
+          !this.tileMap.didColliedWithEnvironment(
+            this.x,
+            this.y,
+            this.requestedMovingDirection
+          )
+        )
+          this.currentMovingDirection = this.requestedMovingDirection;
       }
     }
 
+    if (
+      this.tileMap.didColliedWithEnvironment(
+        this.x,
+        this.y,
+        this.currentMovingDirection
+      )
+    ) {
+      this.pacmanAnimationTimer = null;
+      this.pacmanImageIndex = 1;
+      return;
+    } else if (
+      this.currentMovingDirection != null &&
+      this.pacmanAnimationTimer === null
+    ) {
+      this.pacmanAnimationTimer = this.pacmanAnimationTimerDefault;
+    }
     switch (this.currentMovingDirection) {
       case MovingDirection.up:
         this.y -= this.velocity;
+        this.pacmanRotation = this.Rotation.up;
         break;
 
       case MovingDirection.down:
         this.y += this.velocity;
+        this.pacmanRotation = this.Rotation.down;
         break;
 
       case MovingDirection.left:
         this.x -= this.velocity;
+        this.pacmanRotation = this.Rotation.left;
         break;
 
       case MovingDirection.right:
         this.x += this.velocity;
+        this.pacmanRotation = this.Rotation.right;
         break;
     }
   }
-}
 
-// Pacman(
-//     column * this.tileSize,
-//     row * this.tileSize,
-//     this.tileSize,
-//     velocity,
-//     this
-//   );
+  #animate() {
+    if (this.pacmanAnimationTimer === null) {
+      return;
+    }
+    this.pacmanAnimationTimer--;
+    if (this.pacmanAnimationTimer === 0) {
+      this.pacmanAnimationTimer = this.pacmanAnimationTimerDefault;
+      this.pacmanImageIndex++;
+      if (this.pacmanImageIndex === this.pacmanImages.length) {
+        this.pacmanImageIndex = 0;
+      }
+    }
+  }
+
+  #eatDot() {
+    if (this.tileMap.eatDot(this.x, this.y) && this.madeFirstMove) {
+      //Включаем музыку
+      //this.wakaSound.play();
+    }
+  }
+
+  #eatPowerDot() {
+    if (this.tileMap.eatPowerDot(this.x, this.y)) {
+      //поменять цвет призраков
+      this.powerDotSound.play();
+      this.powerDotActive = true;
+      this.powerDotAboutToExpire = false;
+      this.timers.forEach((timer) => clearTimeout(timer));
+      this.timers = [];
+
+      let powerDotTimer = setTimeout(() => {
+        this.powerDotActive = false;
+        this.powerDotAboutToExpire = false;
+      }, 1000 * 6);
+
+      this.timers.push(powerDotTimer);
+
+      let powerDotAboutToExireTimer = setTimeout(() => {
+        this.powerDotAboutToExpire = true;
+      }, 1000 * 3);
+
+      this.timers.push(powerDotAboutToExireTimer);
+    }
+  }
+}
