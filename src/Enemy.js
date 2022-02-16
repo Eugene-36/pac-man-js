@@ -1,6 +1,5 @@
 import MovingDirection from './MovingDirection.js';
 
-console.log('MovingDirection', MovingDirection);
 export default class Enemy {
   constructor(x, y, tileSize, velocity, tileMap) {
     this.x = x;

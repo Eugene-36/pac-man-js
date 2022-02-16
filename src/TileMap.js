@@ -56,13 +56,13 @@ export default class TileMap {
         }
 
         //! Это можно удалить-добавить в любой момент, просто для визуализации
-        ctx.strokeStyle = 'yellow';
-        ctx.strokeRect(
-          column * this.tileSize,
-          row * this.tileSize,
-          this.tileSize,
-          this.tileSize
-        );
+        // ctx.strokeStyle = 'yellow';
+        // ctx.strokeRect(
+        //   column * this.tileSize,
+        //   row * this.tileSize,
+        //   this.tileSize,
+        //   this.tileSize
+        // );
       }
     }
   }
@@ -156,7 +156,6 @@ export default class TileMap {
   setCanvasSize(canvas) {
     canvas.width = this.map[0].length * this.tileSize;
     canvas.height = this.map.length * this.tileSize;
-    console.log(this.map.length);
   }
 
   //! Метод который проверяет врезался в блок пакмэн или нет
@@ -207,6 +206,14 @@ export default class TileMap {
       }
     }
     return false;
+  }
+
+  didWin() {
+    return this.#dotsLeft() === 0;
+  }
+
+  #dotsLeft() {
+    return this.map.flat().filter((tile) => tile === 0).length;
   }
 
   //! Метод для съедания жёлтых точек
