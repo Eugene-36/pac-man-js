@@ -199,7 +199,7 @@ export default class Pacman {
   #eatDot() {
     if (this.tileMap.eatDot(this.x, this.y) && this.madeFirstMove) {
       //Включаем музыку
-      //this.wakaSound.play();
+      this.wakaSound.play();
     }
   }
 
@@ -229,9 +229,7 @@ export default class Pacman {
 
   #eatGhost(enemies) {
     if (this.powerDotActive) {
-      const collideEnemies = enemies.filter((enemy) =>
-        enemy.colliedWith(this)
-      );
+      const collideEnemies = enemies.filter((enemy) => enemy.colliedWith(this));
       collideEnemies.forEach((enemy) => {
         enemies.splice(enemies.indexOf(enemy), 1);
         this.eatGhostSound.play();
